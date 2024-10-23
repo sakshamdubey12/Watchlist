@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { logout } from "../redux/userSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
-import { useDispatch } from "react-redux";
+import { AiOutlineDelete } from "react-icons/ai";
 import { FaHome } from "react-icons/fa";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
 import axios from 'axios';
@@ -61,6 +61,12 @@ const Sidebar = () => {
     }
   };
 
+  const handleDelete = async (listId)=>{
+    await axios.delete(`http://localhost:3001/watchlistDel/${listId}`, {
+      withCredentials: true, // Include cookies for authentication
+    });
+  }
+
   return (
     <div className="w-[100%] h-screen bg-white overflow-hidden">
       <div className="flex flex-col items-center border-b-2 pb-6">
@@ -85,14 +91,15 @@ const Sidebar = () => {
             </button>
           </div>
           {watchlists.map((list) => (
-            <p
+            <div
               key={list._id}
               onClick={() => navigate(`/dashboard/watchlist/${list._id}`)}
-              className="flex gap-2 items-center cursor-pointer border border-gray-300 rounded-md p-1 my-2"
+              className="flex relative gap-2 items-center cursor-pointer border border-gray-300 rounded-md p-1 my-2"
             >
               <RiMovieLine className='scale-150 ml-2 mr-4' />
               {list.name}
-            </p>
+              <p onClick={()=>handleDelete(list._id)} className='absolute right-2 opacity-0 hover:opacity-100 '><AiOutlineDelete className='scale-150 text-gray-400 ' /></p>
+            </div>
           ))}
         </div>
         <div>
