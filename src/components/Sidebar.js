@@ -16,19 +16,19 @@ const Sidebar = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate(); // Initialize useNavigate
 
+  const fetchWatchlists = async () => {
+    try {
+      const response = await axios.get('http://localhost:3001/watchlists', {
+        withCredentials: true, // Include cookies for user authentication
+      });
+      setWatchlists(response.data);
+    } catch (error) {
+      console.error('Error fetching watchlists:', error);
+      alert('Failed to load watchlists.');
+    }
+  };
+  
   useEffect(() => {
-    const fetchWatchlists = async () => {
-      try {
-        const response = await axios.get('http://localhost:3001/watchlists', {
-          withCredentials: true, // Include cookies for user authentication
-        });
-        setWatchlists(response.data);
-      } catch (error) {
-        console.error('Error fetching watchlists:', error);
-        alert('Failed to load watchlists.');
-      }
-    };
-    
     fetchWatchlists();
   }, []);
 
@@ -65,6 +65,8 @@ const Sidebar = () => {
     await axios.delete(`http://localhost:3001/watchlistDel/${listId}`, {
       withCredentials: true, // Include cookies for authentication
     });
+    fetchWatchlists();
+    navigate('/dashboard')
   }
 
   return (

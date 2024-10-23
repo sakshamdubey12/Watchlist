@@ -20,21 +20,20 @@ const MovieList = () => {
     setMovies(response.data.Search);
   };
 
+  const fetchWatchlists = async () => {
+    try {
+      const response = await axios.get('http://localhost:3001/watchlists', {
+        withCredentials: true, // Include cookies for user authentication
+      });
+      setWatchlists(response.data); // Assuming response.data contains an array of watchlists
+    } catch (error) {
+      console.error('Error fetching watchlists:', error);
+      alert('Failed to load watchlists.');
+    }
+  };
   useEffect(() => {
-    const fetchWatchlists = async () => {
-      try {
-        const response = await axios.get('http://localhost:3001/watchlists', {
-          withCredentials: true, // Include cookies for user authentication
-        });
-        setWatchlists(response.data); // Assuming response.data contains an array of watchlists
-      } catch (error) {
-        console.error('Error fetching watchlists:', error);
-        alert('Failed to load watchlists.');
-      }
-    };
-
     fetchWatchlists();
-  }, []);
+  }, [watchlists]);
 
   // Open the modal when the user clicks the add button
   const openModal = (movie) => {
