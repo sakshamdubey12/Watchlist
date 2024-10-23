@@ -7,38 +7,65 @@ import { RiEditBoxLine } from "react-icons/ri";
 const Watchlist = () => {
   const { listId } = useParams();
   const [watchlist, setWatchlist] = useState(null);
-  const [loading, setLoading] = useState(true); // To track loading state
-  const [error, setError] = useState(null); // To track any error
+  const [loading, setLoading] = useState(true); 
+  const [error, setError] = useState(null); 
+  const [isEditing, setIsEditing] = useState(false); // To toggle edit mode
+  const [editedName, setEditedName] = useState(""); // Store edited name
+  const [editedDescription, setEditedDescription] = useState(""); // Store edited description
 
   useEffect(() => {
     const fetchWatchlist = async () => {
       try {
         const response = await axios.get(`http://localhost:3001/watchlist/${listId}`, {
           withCredentials: true,
-        }); // Fetch the watchlist by ID
-        setWatchlist(response.data); // Set the fetched watchlist
-        console.log("Fetched watchlist:", response.data); // Debugging: Check fetched data
+        });
+        setWatchlist(response.data);
+        setEditedName(response.data.name); // Initialize with existing name
+        setEditedDescription(response.data.description || ""); // Initialize with existing description
       } catch (error) {
         console.error('Error fetching watchlist:', error);
-        setError('Error fetching watchlist.'); // Set error state
+        setError('Error fetching watchlist.');
       } finally {
-        setLoading(false); // Set loading to false after fetch attempt
+        setLoading(false);
       }
     };
 
     fetchWatchlist();
   }, [listId]);
 
+  const handleSave = async () => {
+    try {
+      const updatedWatchlist = {
+        name: editedName,
+        description: editedDescription,
+      };
+
+      await axios.put(`http://localhost:3001/watchlist/${listId}`, updatedWatchlist, {
+        withCredentials: true,
+      });
+
+      setWatchlist((prevWatchlist) => ({
+        ...prevWatchlist,
+        ...updatedWatchlist,
+      }));
+
+      alert('Watchlist updated successfully!');
+      setIsEditing(false); // Exit edit mode after saving
+    } catch (error) {
+      console.error('Error updating watchlist:', error);
+      alert('Failed to update watchlist.');
+    }
+  };
+
   const removeFromWatchlist = async (imdbID) => {
     try {
       await axios.delete(`http://localhost:3001/watchlist/${listId}/movie/${imdbID}`, {
-        withCredentials: true, // Include cookies for authentication
+        withCredentials: true,
       });
 
-      // Update the local state by filtering out the removed movie
       setWatchlist((prevWatchlist) => ({
         ...prevWatchlist,
-        movies: prevWatchlist.movies.filter((movie) => movie.imdbID !== imdbID)
+        movies: prevWatchlist.movies.filter((movie) => movie.imdbID !== imdbID),
       }));
 
       alert('Movie removed successfully!');
@@ -47,6 +74,7 @@ const Watchlist = () => {
       alert('Failed to remove movie.');
     }
   };
+
 
   const toggleWatched = async (movieId, currentStatus) => {
     try {
@@ -70,15 +98,40 @@ const Watchlist = () => {
   if (loading) return <div>Loading...</div>; // Show loading state
   if (error) return <div>{error}</div>; // Show error message if any
 
+
   return (
     <div className="p-8 bg-white h-screen">
       <div className='flex items-center gap-4'>
-        <RiEditBoxLine className='scale-[110%]' />
-        <h2 className="text-3xl font-semibold">{watchlist.name}</h2>
+        {isEditing ? (
+          <div>
+            <input
+              type="text"
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              className="text-2xl font-semibold border-b-2 outline-none"
+            />
+            <button onClick={handleSave} className="ml-2 text-green-500">Save</button>
+            <button onClick={() => setIsEditing(false)} className="ml-2 text-red-500">Cancel</button>
+          </div>
+        ) : (
+          <>
+            <h2 className="text-3xl font-semibold">{watchlist.name}</h2>
+            <RiEditBoxLine className='scale-[110%] cursor-pointer' onClick={() => setIsEditing(true)} />
+          </>
+        )}
       </div>
       <div className='my-8'>
         <h3 className='font-semibold my-2'>About this watchlist</h3>
-        <p>{watchlist.description || "No description available."}</p>
+        {isEditing ? (
+          <textarea
+            value={editedDescription}
+            onChange={(e) => setEditedDescription(e.target.value)}
+            className="w-full border-b-2 outline-none"
+            rows="3"
+          />
+        ) : (
+          <p>{watchlist.description || "No description available."}</p>
+        )}
       </div>
       <div className="grid grid-cols-4 gap-4">
         {watchlist.movies && watchlist.movies.length > 0 ? (
@@ -101,7 +154,7 @@ const Watchlist = () => {
             </div>
           ))
         ) : (
-          <p>No movies found in this watchlist.</p> // Fallback if no movies
+          <p>No movies found in this watchlist.</p>
         )}
       </div>
     </div>

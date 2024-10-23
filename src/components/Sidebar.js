@@ -93,6 +93,25 @@ const Sidebar = () => {
             </button>
           </div>
           {watchlists.map((list) => (
+  <div
+    key={list._id}
+    onClick={() => navigate(`/dashboard/watchlist/${list._id}`)}
+    className="flex relative gap-2 items-center cursor-pointer border border-gray-300 rounded-md p-1 my-2 hover:bg-gray-100 group" // Add hover effect to the container and group class
+  >
+    <RiMovieLine className='scale-150 ml-2 mr-4' />
+    {list.name}
+    <p 
+      onClick={(e) => {
+        handleDelete(list._id);
+      }}
+      className='absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300' // Show icon on hover using group-hover
+    >
+      <AiOutlineDelete className='scale-150 text-gray-400' />
+    </p>
+  </div>
+))}
+
+          {/* {watchlists.map((list) => (
             <div
               key={list._id}
               onClick={() => navigate(`/dashboard/watchlist/${list._id}`)}
@@ -102,7 +121,7 @@ const Sidebar = () => {
               {list.name}
               <p onClick={()=>handleDelete(list._id)} className='absolute right-2 opacity-0 hover:opacity-100 '><AiOutlineDelete className='scale-150 text-gray-400 ' /></p>
             </div>
-          ))}
+          ))} */}
         </div>
         <div>
           <button onClick={handleLogout} className="text-red-500 hover:text-red-700">

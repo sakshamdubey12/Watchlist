@@ -102,6 +102,31 @@ app.get('/watchlists', isLoggedIn, async (req, res) => {
 });
 
 
+
+// Update watchlist name and description
+app.put('/watchlist/:listId', isLoggedIn, async (req, res) => {
+  const { listId } = req.params;
+  const { name, description } = req.body;
+
+  try {
+    // Find the watchlist by ID and update it
+    const updatedWatchlist = await Watchlist.findOneAndUpdate(
+      { _id: listId },
+      { name, description },
+      { new: true, runValidators: true } // Return the updated document
+    );
+
+    if (!updatedWatchlist) {
+      return res.status(404).json({ message: 'Watchlist not found' });
+    }
+
+    res.status(200).json({ message: 'Watchlist updated successfully', watchlist: updatedWatchlist });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating watchlist', error: error.message });
+  }
+});
+
+
 app.post('/watchlists', isLoggedIn, async (req, res) => {
     console.log(req.user)
     const { name, description } = req.body;
