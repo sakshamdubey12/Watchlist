@@ -65,7 +65,7 @@ app.post('/login', async (req, res) => {
 });
 
 // Logout endpoint
-app.post('/logout', (req, res) => {
+app.get('/logout', (req, res) => {
     res.clearCookie('token',{
         httpOnly: true, // Prevent JavaScript access
         secure: false, // Set to true in production

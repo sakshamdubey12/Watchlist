@@ -34,6 +34,7 @@ const Sidebar = () => {
       const response = await axios.get('http://localhost:3001/logout', {
         withCredentials: true, // Include cookies for user authentication
       });
+      navigate('/');
     } catch (error) {
       console.error('Error while logout:', error);
       alert('Failed to logout.');
