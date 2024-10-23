@@ -6,11 +6,14 @@ import { useDispatch } from "react-redux";
 import { FaHome } from "react-icons/fa";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
 import axios from 'axios';
+import { MdOutlineBookmarkAdd } from "react-icons/md";
+import Modal from './Modal';
 import { RiMovieLine } from "react-icons/ri";
 const Sidebar = () => {
   const [watchlists, setWatchlists] = useState([]);
   const [newListName, setNewListName] = useState('');
-  const dispatch = useDispatch();
+  const [newListDescription, setNewListDescription] = useState(''); // For the new watchlist description
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate(); // Initialize useNavigate
 
   useEffect(() => {
@@ -41,21 +44,17 @@ const Sidebar = () => {
     }
   };
 
-  const handleAddWatchlist = async () => {
-    if (!newListName) {
-      alert('Please enter a name for the new watchlist.');
-      return;
-    }
-
+  const handleAddWatchlist = async (watchlistData) => {
     try {
-      const response = await axios.post('http://localhost:3001/watchlists', { name: newListName }, {
-        withCredentials: true, // Include cookies with the request
+      const response = await axios.post('http://localhost:3001/watchlists', watchlistData, {
+        withCredentials: true,
       });
       
-      // If successful, add the new watchlist to the state
-      setWatchlists(prev => [...prev, response.data.watchlist]); // Add new watchlist to the state
+      setWatchlists(prev => [...prev, response.data.watchlist]);
       setNewListName(''); // Reset input field
-      alert('Watchlist created successfully!'); // Notify user
+      setNewListDescription(''); // Reset description field
+      setIsModalOpen(false); // Close the modal
+      alert('Watchlist created successfully!');
     } catch (error) {
       console.error('Failed to create watchlist:', error);
       alert('Failed to create watchlist.');
@@ -79,44 +78,41 @@ const Sidebar = () => {
 
       <div className="flex flex-col justify-between px-8 py-4 h-[65%]">
         <div className='overflow-y-auto'>
-          <h2 className="font-semibold text-xl">My Lists</h2>
+          <div className='flex justify-between items-center mr-2'>
+            <h2 className="font-semibold text-xl">My Lists</h2>
+            <button onClick={() => setIsModalOpen(true)}>
+              <MdOutlineBookmarkAdd className='scale-150 text-red-500 ' />
+            </button>
+          </div>
           {watchlists.map((list) => (
             <p
               key={list._id}
-              onClick={() => navigate(`/dashboard/watchlist/${list._id}`)} // Navigate to watchlist page
-              className="flex gap-2  items-center cursor-pointer border border-gray-300 rounded-md p-1 my-2 "
+              onClick={() => navigate(`/dashboard/watchlist/${list._id}`)}
+              className="flex gap-2 items-center cursor-pointer border border-gray-300 rounded-md p-1 my-2"
             >
               <RiMovieLine className='scale-150 ml-2 mr-4' />
               {list.name}
             </p>
           ))}
-          
-         
         </div>
         <div>
-           {/* New Watchlist Creation Section */}
-           <div className="flex items-center mb-4">
-            
-            <input
-              type="text"
-              value={newListName}
-              onChange={(e) => setNewListName(e.target.value)}
-              placeholder="Enter new watchlist name"
-              className="border py-1 px-2 text-xs rounded w-[100%] "
-            />
-            <button
-              onClick={handleAddWatchlist}
-              className=" bg-red-500 text-xs mx-2 text-white py-1 px-4 rounded hover:bg-red-700"
-            >
-              Add
-            </button>
-          </div>
           <button onClick={handleLogout} className="text-red-500 hover:text-red-700">
             <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />
             Logout
           </button>
         </div>
       </div>
+
+      {/* Modal for adding watchlist */}
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onAdd={handleAddWatchlist} 
+        watchlistName={newListName}
+        setWatchlistName={setNewListName}
+        watchlistDescription={newListDescription}
+        setWatchlistDescription={setNewListDescription}
+      />
     </div>
   );
 };
