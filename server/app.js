@@ -164,6 +164,18 @@ app.delete('/watchlist/:listId/movie/:imdbID', async (req, res) => {
     }
   });
 
+  app.delete('/watchlistDel/:listId', async (req, res) => {
+    const { listId } = req.params;
+    try {
+      // Find the watchlist by ID and remove the movie with the specified imdbID
+      const WatchList = await Watchlist.findOneAndDelete({_id:listId})
+      res.status(200).json({ message: 'removed watchlist' });
+
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to remove watchlist', error });
+    }
+  });
+
 app.post('/watchlists/:listId', async (req, res) => {
     const { listId } = req.params;
     const {title,year,imdbID,type,poster } = req.body;
