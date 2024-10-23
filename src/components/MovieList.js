@@ -152,9 +152,7 @@ const MovieList = () => {
           <div className="bg-white relative rounded-lg p-6 w-full max-w-md">
             <h2 className="text-2xl font-semibold mb-4">Add to List</h2>
             <form onSubmit={(e) => e.preventDefault()}>
-              {loadingWatchlists ? (
-                <p>Loading watchlists...</p>
-              ) : (
+          
                 <>
                   {watchlists.length > 0 && !creatingNewList ? (
                     <>
@@ -174,7 +172,7 @@ const MovieList = () => {
                     </>
                   ) : (
                     <>
-                      <p className="text-gray-500 text-sm">No watchlists available. Please create a new one below.</p>
+                      {/* <p className="text-gray-500 text-sm">No watchlists available. Please create a new one below.</p> */}
                       <input
                         type="text"
                         placeholder="New List Name"
@@ -193,7 +191,7 @@ const MovieList = () => {
                     </>
                   )}
                 </>
-              )}
+          
 
               <div className="flex justify-end mt-6">
                 <button

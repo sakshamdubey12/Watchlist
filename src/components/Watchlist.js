@@ -110,8 +110,8 @@ const Watchlist = () => {
               onChange={(e) => setEditedName(e.target.value)}
               className="text-2xl font-semibold border-b-2 outline-none"
             />
-            <button onClick={handleSave} className="ml-2 text-green-500">Save</button>
-            <button onClick={() => setIsEditing(false)} className="ml-2 text-red-500">Cancel</button>
+            <button onClick={handleSave} className="ml-2 border border-black bg-black p-1 px-2 text-sm rounded-md text-white hover:bg-white hover:text-black">Save</button>
+            <button onClick={() => setIsEditing(false)} className="ml-2 border border-black bg-black p-1 px-2 text-sm rounded-md text-white hover:bg-white hover:text-black">Cancel</button>
           </div>
         ) : (
           <>
