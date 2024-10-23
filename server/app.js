@@ -129,11 +129,12 @@ app.put('/watchlist/:listId', isLoggedIn, async (req, res) => {
 
 app.post('/watchlists', isLoggedIn, async (req, res) => {
     console.log(req.user)
-    const { name } = req.body;
+    const { name, description } = req.body;
+    console.log(req.body)
     const user = await User.findOne({email:req.user.email}) // Assuming you're storing user id in the request after login
 
     try {
-        const newWatchlist = new Watchlist({ name, user: user._id });
+        const newWatchlist = new Watchlist({ name, description, user: user._id });
         await newWatchlist.save();
         await User.findByIdAndUpdate(user._id, { $push: { watchlists: newWatchlist._id } });
 
