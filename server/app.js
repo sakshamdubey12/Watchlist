@@ -181,7 +181,7 @@ app.post('/watchlists/:listId', async (req, res) => {
     console.log(req.body.Title)
     try {
       const watchlist = await Watchlist.findById(listId);
-      watchlist.movies.push({ title: req.body.Title, year:req.body.Year, imdbID,poster:req.body.Poster });
+      watchlist.movies.push({ title: req.body.Title, year:req.body.Year, imdbID,poster:req.body.Poster,watched:false });
 
       await watchlist.save();
       res.status(200).json({ message: 'Movie added to watchlist!' });
@@ -189,6 +189,35 @@ app.post('/watchlists/:listId', async (req, res) => {
       res.status(500).json({ message: 'Error adding movie to watchlist.' });
     }
   });
+
+  app.post('/markWatched', isLoggedIn, async (req, res) => {
+    const { movieId, listId } = req.body;
+  
+    try {
+      // Find the watchlist by its ID
+      const watchList = await Watchlist.findOne({ _id: listId });
+      if (!watchList) {
+        return res.status(404).json({ message: 'Watchlist not found' });
+      }
+  
+      // Find the movie inside the watchlist's movies array and update its watched status
+      const movie = watchList.movies.find((movie) => movie.imdbID === movieId);
+      if (!movie) {
+        return res.status(404).json({ message: 'Movie not found in the watchlist' });
+      }
+  
+      movie.watched = !movie.watched; // Update watched status to true
+  
+      // Save the updated watchlist back to the database
+      await watchList.save();
+  
+      return res.status(200).json({ message: 'Movie marked as watched successfully', watchList });
+    } catch (error) {
+      console.error('Error marking movie as watched:', error);
+      return res.status(500).json({ message: 'Failed to mark movie as watched' });
+    }
+  });
+  
 
 
 // Start the server
