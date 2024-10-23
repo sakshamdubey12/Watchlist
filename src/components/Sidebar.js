@@ -29,9 +29,15 @@ const Sidebar = () => {
     fetchWatchlists();
   }, []);
 
-  const handleLogout = () => {
-    dispatch(logout());
-    localStorage.removeItem("email");
+  const handleLogout = async () => {
+    try {
+      const response = await axios.get('http://localhost:3001/logout', {
+        withCredentials: true, // Include cookies for user authentication
+      });
+    } catch (error) {
+      console.error('Error while logout:', error);
+      alert('Failed to logout.');
+    }
   };
 
   const handleAddWatchlist = async () => {
