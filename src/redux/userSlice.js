@@ -35,7 +35,7 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
   email: null,
-  watchlists: JSON.parse(localStorage.getItem('watchlists')) || {},
+  watchlists: JSON.parse(localStorage.getItem('watchlists')) || {}, // Load from localStorage if available
 };
 
 const userSlice = createSlice({
@@ -48,24 +48,24 @@ const userSlice = createSlice({
     logout(state) {
       state.email = null;
       state.watchlists = {};
-      localStorage.removeItem('watchlists'); // Clear from localStorage on logout
+      localStorage.removeItem('watchlists'); // Clear watchlists from localStorage on logout
     },
-    addNewWatchlist(state, action) {
-      const { watchlistName } = action.payload;
-      if (!state.watchlists[watchlistName]) {
-        state.watchlists[watchlistName] = []; // Create a new watchlist if it doesn't exist
-        localStorage.setItem('watchlists', JSON.stringify(state.watchlists)); // Update localStorage
-      }
-    },
+    // addNewWatchlist(state, action) {
+    //   const { watchlistName } = action.payload;
+    //   if (!state.watchlists[watchlistName]) {
+    //     state.watchlists[watchlistName] = []; // Create a new watchlist if it doesn't exist
+    //     localStorage.setItem('watchlists', JSON.stringify(state.watchlists)); // Save to localStorage
+    //   }
+    // },
     addToWatchlist(state, action) {
-      const { list, movie } = action.payload; // Extract list and movie
+      const { list, movie } = action.payload;
       if (state.watchlists[list]) {
-        state.watchlists[list].push(movie); // Add movie to the specified list
+        state.watchlists[list].push(movie); // Add movie to the watchlist
         localStorage.setItem('watchlists', JSON.stringify(state.watchlists)); // Update localStorage
       }
     },
     removeFromWatchlist(state, action) {
-      const { list, movieId } = action.payload; // Extract list and movie ID
+      const { list, movieId } = action.payload;
       if (state.watchlists[list]) {
         state.watchlists[list] = state.watchlists[list].filter(movie => movie.imdbID !== movieId);
         localStorage.setItem('watchlists', JSON.stringify(state.watchlists)); // Update localStorage
@@ -74,5 +74,6 @@ const userSlice = createSlice({
   },
 });
 
-export const { login, logout, addNewWatchlist, addToWatchlist, removeFromWatchlist } = userSlice.actions;
+export const { login, logout, addToWatchlist, removeFromWatchlist } = userSlice.actions;
+
 export default userSlice.reducer;

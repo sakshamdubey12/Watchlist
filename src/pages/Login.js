@@ -1,39 +1,47 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
 export default function Login() {
-  const [email, setEmail] = useState('')
-  const [activeTab, setActiveTab] = useState('login')
+  const [email, setEmail] = useState('');
+  const [activeTab, setActiveTab] = useState('login');
   const navigate = useNavigate();
 
-  const handleSubmit = async (event, action) => {
-    event.preventDefault()
-    
-    const response = await fetch(`http://localhost:3001/${action}`,{
-      method: 'POST',
-      headers: {
-          'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
-      credentials: 'include'
-  })
-  const data = await response.json();
-  if (response.ok) {
-    if(data.message==="Logged in."){
-      navigate('/dashboard');
-    }
-    console.log(`${action} successful!`); // Handle user data as needed
-    } else {
-      if(data.message==="User not registered."){
-        setActiveTab('signup')
-      }
-      else if(data.message==="User already registered."){
-        setActiveTab('login')
-      }
-      else{
-        console.log("Internal Error")
+  const handleSubmit = (event, action) => {
+    event.preventDefault();
+
+    // Get the existing users from localStorage or initialize an empty array
+    const users = JSON.parse(localStorage.getItem('users')) || [];
+
+    if (action === 'signup') {
+      const userExists = users.find((user) => user.email === email);
+
+      if (userExists) {
+        alert('User already registered. Please log in.');
+        setActiveTab('login');
+      } else {
+        // Add new user to localStorage with an empty watchlist
+        users.push({ email, watchlist: [] });
+        localStorage.setItem('users', JSON.stringify(users));
+        localStorage.setItem('currentUser', email); // Log in the user after signup
+        alert('Signup successful! Logging you in...');
+        navigate('/dashboard'); // Redirect to dashboard
       }
     }
+
+    if (action === 'login') {
+      const user = users.find((user) => user.email === email);
+
+      if (user) {
+        // Log in the user and store their email in localStorage
+        localStorage.setItem('currentUser', email);
+        alert('Login successful!');
+        navigate('/dashboard'); // Redirect to dashboard
+      } else {
+        alert('User not registered. Please sign up.');
+        setActiveTab('signup');
       }
+    }
+  };
 
   return (
     <div className="min-h-screen w-[100%] bg-cover bg-center flex items-center justify-center p-4" style={{
@@ -44,14 +52,14 @@ export default function Login() {
           <div className="p-8">
             <div className="flex items-center justify-center mb-6">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19.82 2H4.18C2.97 2 2 2.97 2 4.18v15.64C2 21.03 2.97 22 4.18 22h15.64c1.21 0 2.18-.97 2.18-2.18V4.18C22 2.97 21.03 2 19.82 2z"/>
-                <path d="M7 2v20"/>
-                <path d="M17 2v20"/>
-                <path d="M2 12h20"/>
-                <path d="M2 7h5"/>
-                <path d="M2 17h5"/>
-                <path d="M17 17h5"/>
-                <path d="M17 7h5"/>
+                <path d="M19.82 2H4.18C2.97 2 2 2.97 2 4.18v15.64C2 21.03 2.97 22 4.18 22h15.64c1.21 0 2.18-.97 2.18-2.18V4.18C22 2.97 21.03 2 19.82 2z" />
+                <path d="M7 2v20" />
+                <path d="M17 2v20" />
+                <path d="M2 12h20" />
+                <path d="M2 7h5" />
+                <path d="M2 17h5" />
+                <path d="M17 17h5" />
+                <path d="M17 7h5" />
               </svg>
               <h1 className="text-4xl font-bold text-white ml-4">CineTrack</h1>
             </div>
