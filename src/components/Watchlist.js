@@ -16,7 +16,7 @@ const Watchlist = () => {
   useEffect(() => {
     const fetchWatchlist = async () => {
       try {
-        const response = await axios.get(`http://localhost:3001/watchlist/${listId}`, {
+        const response = await axios.get(`http://localhost:3001/watchlists/watchlist/${listId}`, {
           withCredentials: true,
         });
         setWatchlist(response.data);
@@ -40,7 +40,7 @@ const Watchlist = () => {
         description: editedDescription,
       };
 
-      await axios.put(`http://localhost:3001/watchlist/${listId}`, updatedWatchlist, {
+      await axios.put(`http://localhost:3001/watchlists/watchlist/${listId}`, updatedWatchlist, {
         withCredentials: true,
       });
 
@@ -59,7 +59,7 @@ const Watchlist = () => {
 
   const removeFromWatchlist = async (imdbID) => {
     try {
-      await axios.delete(`http://localhost:3001/watchlist/${listId}/movie/${imdbID}`, {
+      await axios.delete(`http://localhost:3001/watchlists/watchlist/${listId}/movie/${imdbID}`, {
         withCredentials: true,
       });
 
@@ -78,7 +78,7 @@ const Watchlist = () => {
 
   const toggleWatched = async (movieId, currentStatus) => {
     try {
-      await axios.post('http://localhost:3001/markWatched', { movieId, listId }, {
+      await axios.post('http://localhost:3001/watchlists/markWatched', { movieId, listId }, {
         withCredentials: true,
       });
 
@@ -100,7 +100,7 @@ const Watchlist = () => {
 
 
   return (
-    <div className="p-8 bg-white h-screen">
+    <div className="p-8 bg-white h-screen overflow-y-scroll">
       <div className='flex items-center gap-4'>
         {isEditing ? (
           <div>
@@ -133,7 +133,7 @@ const Watchlist = () => {
           <p>{watchlist.description || "No description available."}</p>
         )}
       </div>
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid md:grid-cols-4 lg:grid-cols-4 sm:grid-cols-2 gap-4">
         {watchlist.movies && watchlist.movies.length > 0 ? (
           watchlist.movies.map((movie) => (
             <div key={movie.imdbID} className="bg-white relative shadow-md rounded-lg overflow-hidden">
@@ -162,3 +162,6 @@ const Watchlist = () => {
 };
 
 export default Watchlist;
+
+
+  

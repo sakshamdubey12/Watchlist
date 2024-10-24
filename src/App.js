@@ -4,10 +4,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import MovieList from './components/MovieList';
 import Watchlist from './components/Watchlist';
-import Login from './components/Login';
+import Login from './pages/Login';
 import { login, logout } from './redux/userSlice';
 import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashborad'
+import Dashboard from './pages/Dashborad'
 
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 function App() {

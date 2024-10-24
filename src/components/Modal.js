@@ -14,7 +14,7 @@ const Modal = ({ isOpen, onClose, onAdd, watchlistName, setWatchlistName, watchl
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg p-4 w-1/3">
+      <div className="bg-white rounded-lg p-4 w-1/2 md:w-1/3 lg:w-1/3">
         <h3 className="text-lg font-semibold mb-4">Create New Watchlist</h3>
         <input
           type="text"

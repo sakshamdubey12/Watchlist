@@ -75,10 +75,11 @@ const MovieList = () => {
           }, { withCredentials: true });
 
           const newWatchlist = response.data;
+          // console.log()
           setWatchlists([...watchlists, newWatchlist]);
           dispatch(addToWatchlist({ list: newWatchlist._id, movie: selectedMovie }));
-
           alert('Watchlist created and movie added!');
+          
         } catch (error) {
           console.error('Error creating new watchlist:', error);
           alert('Failed to create new watchlist.');
@@ -96,9 +97,10 @@ const MovieList = () => {
 
           dispatch(addToWatchlist({ list: selectedList, movie: movieWithList }));
           alert(response.data.message || 'Movie added to watchlist!');
+        
         } catch (error) {
           console.error('Error adding movie to watchlist:', error);
-          alert('Failed to add movie to watchlist.');
+          alert('Failed to add movie to watchlist.',);
         }
       } else {
         alert('Please select a watchlist or create a new one.');
@@ -130,9 +132,9 @@ const MovieList = () => {
       {loadingMovies ? (
         <p className="text-center mt-4">Loading movies...</p>
       ) : (
-        <div className="grid grid-cols-4 m-auto gap-4 mt-8 w-[92.5%]">
+        <div className="grid lg:grid-cols-4 md:grid-cols-2 sm:grid-cols-2 m-auto gap-4 mt-8 w-[92.5%]">
           {movies?.map((movie) => (
-            <div key={movie.imdbID} className="bg-white shadow-lg rounded-md overflow-hidden">
+            <div key={movie.imdbID} className="bg-white  shadow-lg rounded-md overflow-hidden">
               <img src={movie.Poster} alt={movie.Title} className="w-full h-64 object-cover" />
               <div className="p-4 relative">
                 <h3 className="text-base font-semibold">{movie.Title}</h3>
@@ -218,3 +220,4 @@ const MovieList = () => {
 };
 
 export default MovieList;
+
