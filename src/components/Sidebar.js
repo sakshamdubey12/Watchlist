@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { MdOutlineBookmarkAdd } from "react-icons/md";
 import Modal from "./Modal";
 import { RiMovieLine } from "react-icons/ri";
+import { useSelector } from 'react-redux';
 
 const Sidebar = () => {
   const [watchlists, setWatchlists] = useState([]);
@@ -15,18 +16,22 @@ const Sidebar = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Function to fetch watchlists from localStorage
+  // Function to fetch watchlists from localStorage (from users array)
   const fetchWatchlists = () => {
     const user = localStorage.getItem('currentUser');
     if (user) {
-      const storedWatchlists = JSON.parse(localStorage.getItem(`${user}_watchlists`)) || [];
-      setWatchlists(storedWatchlists);
+      const users = JSON.parse(localStorage.getItem('users')) || [];
+      const currentUser = users.find(u => u.email === user);
+
+      if (currentUser) {
+        setWatchlists(currentUser.watchlist || []);
+      }
     }
   };
 
   useEffect(() => {
     fetchWatchlists();
-  }, []);
+  }, []); // Only fetch watchlists once on mount
 
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
@@ -35,36 +40,59 @@ const Sidebar = () => {
 
   const handleAddWatchlist = () => {
     const user = localStorage.getItem('currentUser');
-    if (user) {
-      const newWatchlist = {
-        id: Date.now().toString(), // Unique ID for the watchlist
-        name: newListName,
-        description: newListDescription,
-      };
+    if (!user) {
+      alert("No user is logged in.");
+      return;
+    }
 
-      const storedWatchlists = JSON.parse(localStorage.getItem(`${user}_watchlists`)) || [];
-      const updatedWatchlists = [...storedWatchlists, newWatchlist];
+    const newWatchlist = {
+      id: Date.now().toString(), // Unique ID for the watchlist
+      name: newListName,
+      description: newListDescription,
+    };
 
-      // Save the updated watchlist back to localStorage
-      localStorage.setItem(`${user}_watchlists`, JSON.stringify(updatedWatchlists));
-      setWatchlists(updatedWatchlists); // Update state
+    // Fetch all users from localStorage
+    let users = JSON.parse(localStorage.getItem('users')) || [];
+    let currentUser = users.find(u => u.email === user);
+
+    // If currentUser is found, add the new watchlist to their watchlist array
+    if (currentUser) {
+      currentUser.watchlist = currentUser.watchlist || []; // Initialize watchlist if it doesn't exist
+      currentUser.watchlist.push(newWatchlist);
+
+      // Update the users array with the modified currentUser
+      const updatedUsers = users.map(u => u.email === user ? currentUser : u);
+      localStorage.setItem('users', JSON.stringify(updatedUsers)); // Save updated users array back to localStorage
+
+      // Update component state
+      setWatchlists(currentUser.watchlist);
       setNewListName("");
       setNewListDescription("");
       setIsModalOpen(false);
       alert("Watchlist created successfully!");
+    } else {
+      alert("User not found.");
     }
   };
 
   const handleDelete = (listId) => {
     const user = localStorage.getItem('currentUser');
     if (user) {
-      const storedWatchlists = JSON.parse(localStorage.getItem(`${user}_watchlists`)) || [];
-      const updatedWatchlists = storedWatchlists.filter((list) => list.id !== listId);
+      let users = JSON.parse(localStorage.getItem('users')) || [];
+      let currentUser = users.find(u => u.email === user);
 
-      // Update localStorage and state
-      localStorage.setItem(`${user}_watchlists`, JSON.stringify(updatedWatchlists));
-      setWatchlists(updatedWatchlists);
-      navigate("/dashboard");
+      if (currentUser) {
+        const updatedWatchlists = currentUser.watchlist.filter(list => list.id !== listId);
+
+        currentUser.watchlist = updatedWatchlists; // Update user's watchlist
+
+        // Save updated users array back to localStorage
+        const updatedUsers = users.map(u => u.email === user ? currentUser : u);
+        localStorage.setItem('users', JSON.stringify(updatedUsers));
+
+        setWatchlists(updatedWatchlists); // Update component state
+        navigate("/dashboard");
+      }
     }
   };
 

@@ -1,31 +1,41 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { addToWatchlist } from '../redux/userSlice';
+import React, { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
+import { addToWatchlist } from "../redux/userSlice";
 import { BsFillBookmarkPlusFill } from "react-icons/bs";
 import { IoCloseOutline, IoBookmarksOutline } from "react-icons/io5";
-import axios from 'axios';
-import MovieDetailsModal from './MovieDetailsModal'; // Import the new modal
+import axios from "axios";
+import MovieDetailsModal from "./MovieDetailsModal"; // Import the new modal
 
 const MovieList = () => {
   const [movies, setMovies] = useState([]);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false); // New state for details modal
   const [watchlists, setWatchlists] = useState([]);
-  const [selectedList, setSelectedList] = useState('');
+  const [selectedList, setSelectedList] = useState("");
   const [movieDetails, setMovieDetails] = useState(null);
   const [creatingNewList, setCreatingNewList] = useState(false);
-  const [newListName, setNewListName] = useState('');
-  const [newListDescription, setNewListDescription] = useState('');
+  const [newListName, setNewListName] = useState("");
+  const [newListDescription, setNewListDescription] = useState("");
   const [loadingMovies, setLoadingMovies] = useState(false);
   const dispatch = useDispatch();
 
   const fetchWatchlists = () => {
-    const user = localStorage.getItem('currentUser');
-    if (user) {
-      const storedWatchlists = JSON.parse(localStorage.getItem(`${user}_watchlists`)) || [];
-      setWatchlists(storedWatchlists);
+    const userEmail = localStorage.getItem("currentUser"); // Assume this stores the user's email as the key for currentUser
+    if (userEmail) {
+      // Fetch all users from localStorage
+      let users = JSON.parse(localStorage.getItem("users")) || [];
+
+      // Find the current user
+      let currentUser = users.find((u) => u.email === userEmail);
+
+      // If currentUser is found, fetch their watchlists from their specific key
+      if (currentUser && currentUser.watchlist) {
+        setWatchlists(currentUser.watchlist); // Set the current user's watchlists in state
+      } else {
+        setWatchlists([]); // If no watchlists found, set an empty array
+      }
     }
   };
 
@@ -36,11 +46,13 @@ const MovieList = () => {
   const searchMovies = async () => {
     setLoadingMovies(true);
     try {
-      const response = await axios.get(`http://www.omdbapi.com/?s=${query}&apikey=${process.env.REACT_APP_OMDB_API_KEY}`);
+      const response = await axios.get(
+        `http://www.omdbapi.com/?s=${query}&apikey=${process.env.REACT_APP_OMDB_API_KEY}`
+      );
       setMovies(response.data.Search);
     } catch (error) {
-      console.error('Error fetching movies:', error);
-      alert('Failed to load movies.');
+      console.error("Error fetching movies:", error);
+      alert("Failed to load movies.");
     } finally {
       setLoadingMovies(false);
     }
@@ -54,20 +66,22 @@ const MovieList = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedMovie(null);
-    setSelectedList('');
+    setSelectedList("");
     setCreatingNewList(false);
-    setNewListName('');
-    setNewListDescription('');
+    setNewListName("");
+    setNewListDescription("");
   };
 
   const fetchMovieDetails = async (imdbID) => {
     // setLoadingDetails(true);
     try {
-      const response = await axios.get(`http://www.omdbapi.com/?i=${imdbID}&apikey=${process.env.REACT_APP_OMDB_API_KEY}`);
+      const response = await axios.get(
+        `http://www.omdbapi.com/?i=${imdbID}&apikey=${process.env.REACT_APP_OMDB_API_KEY}`
+      );
       setMovieDetails(response.data); // Set detailed info into state
     } catch (error) {
-      console.error('Error fetching movie details:', error);
-      alert('Failed to load movie details.');
+      console.error("Error fetching movie details:", error);
+      alert("Failed to load movie details.");
     } finally {
       // setLoadingDetails(false);
     }
@@ -75,7 +89,7 @@ const MovieList = () => {
 
   const openDetailsModal = (movie) => {
     setSelectedMovie(movie);
-    fetchMovieDetails(movie.imdbID)
+    fetchMovieDetails(movie.imdbID);
     setDetailsModalOpen(true);
   };
 
@@ -86,13 +100,28 @@ const MovieList = () => {
   };
 
   const handleAddToList = () => {
-    const user = localStorage.getItem('currentUser');
-    if (!user) {
+    const userEmail = localStorage.getItem("currentUser"); // Assume this stores the user's email as the key for currentUser
+    if (!userEmail) {
       alert("No user logged in");
       return;
     }
 
-    let updatedWatchlists = [...watchlists];
+    // Fetch all users from localStorage
+    let users = JSON.parse(localStorage.getItem("users")) || [];
+
+    // Find the current user by email
+    let currentUserIndex = users.findIndex((u) => u.email === userEmail);
+    let currentUser = users[currentUserIndex];
+
+    if (!currentUser) {
+      alert("User not found.");
+      return;
+    }
+
+    // Ensure that the watchlist array exists
+    if (!Array.isArray(currentUser.watchlist)) {
+      currentUser.watchlist = [];
+    }
 
     // If creating a new list
     if (creatingNewList) {
@@ -101,49 +130,77 @@ const MovieList = () => {
           id: Date.now().toString(),
           name: newListName,
           description: newListDescription,
-          movies: [selectedMovie],
+          movies: [selectedMovie], // Add the selected movie to the new watchlist
         };
 
-        updatedWatchlists = [...watchlists, newWatchlist];
-        setWatchlists(updatedWatchlists);
-        localStorage.setItem(`${user}_watchlists`, JSON.stringify(updatedWatchlists));
-        dispatch(addToWatchlist({ list: newWatchlist.id, movie: selectedMovie }));
-        alert('Watchlist created and movie added!');
+        currentUser.watchlist.push(newWatchlist); // Add new watchlist to the user's watchlist array
+        users[currentUserIndex] = currentUser; // Update the user in the users array
+        localStorage.setItem("users", JSON.stringify(users)); // Save updated users array
+
+        setWatchlists(currentUser.watchlist); // Update state with the new watchlist
+        dispatch(
+          addToWatchlist({ list: newWatchlist.id, movie: selectedMovie })
+        );
+        alert("Watchlist created and movie added!");
       } else {
-        alert('Please provide a name for the new watchlist.');
+        alert("Please provide a name for the new watchlist.");
       }
     } else {
       if (selectedList) {
-        const updatedWatchlist = updatedWatchlists.find((list) => list.id === selectedList);
-        if (updatedWatchlist) {
-          updatedWatchlist.movies.push(selectedMovie);
-        }
+        // Find the watchlist by ID
+        const watchlistIndex = currentUser.watchlist.findIndex(
+          (list) => list.id === selectedList
+        );
+        if (watchlistIndex !== -1) {
+          // Ensure that the movies array exists in the watchlist
+          if (!Array.isArray(currentUser.watchlist[watchlistIndex].movies)) {
+            currentUser.watchlist[watchlistIndex].movies = [];
+          }
 
-        setWatchlists(updatedWatchlists);
-        localStorage.setItem(`${user}_watchlists`, JSON.stringify(updatedWatchlists));
-        dispatch(addToWatchlist({ list: selectedList, movie: selectedMovie }));
-        alert('Movie added to watchlist!');
+          // Add the selected movie to the existing watchlist
+          currentUser.watchlist[watchlistIndex].movies.push(selectedMovie);
+
+          users[currentUserIndex] = currentUser; // Update the user in the users array
+          localStorage.setItem("users", JSON.stringify(users)); // Save updated users array
+
+          setWatchlists(currentUser.watchlist); // Update state with new watchlist data
+          dispatch(
+            addToWatchlist({ list: selectedList, movie: selectedMovie })
+          );
+          alert("Movie added to watchlist!");
+        } else {
+          alert("Watchlist not found.");
+        }
       } else {
-        alert('Please select a watchlist or create a new one.');
+        alert("Please select a watchlist or create a new one.");
       }
     }
+
     closeModal();
   };
+
   return (
     <div className="p-8 bg-white h-screen overflow-y-scroll">
-      <div className='border border-red-700 rounded-md m-auto w-[92.5%] p-4'>
-        <h3 className='text-3xl mb-8'>Welcome to <span className='text-red-500'>Watchlists</span></h3>
-        <p className='my-2'>Browse movies, add them to watchlists and share them with friends</p>
+      <div className="border border-red-700 rounded-md m-auto w-[92.5%] p-4">
+        <h3 className="text-3xl mb-8">
+          Welcome to <span className="text-red-500">Watchlists</span>
+        </h3>
+        <p className="my-2">
+          Browse movies, add them to watchlists and share them with friends
+        </p>
       </div>
-      <div className='relative w-[92.5%] m-auto flex mt-8'>
+      <div className="relative w-[92.5%] m-auto flex mt-8">
         <input
-          type='text'
-          placeholder='Search Movies...'
+          type="text"
+          placeholder="Search Movies..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className='w-[100%] border border-gray-300 p-2 rounded-md'
+          className="w-[100%] border border-gray-300 p-2 rounded-md"
         />
-        <button onClick={searchMovies} className='absolute right-0 border border-red-500 bg-red-500 px-4 py-2 rounded-md text-white'>
+        <button
+          onClick={searchMovies}
+          className="absolute right-0 border border-red-500 bg-red-500 px-4 py-2 rounded-md text-white"
+        >
           Search
         </button>
       </div>
@@ -153,13 +210,24 @@ const MovieList = () => {
       ) : (
         <div className="grid lg:grid-cols-4 md:grid-cols-2 sm:grid-cols-2 m-auto gap-4 mt-8 w-[92.5%]">
           {movies?.map((movie) => (
-            <div key={movie.imdbID}  className="bg-white shadow-lg rounded-md overflow-hidden">
-              <img onClick={() => openDetailsModal(movie)} src={movie.Poster} alt={movie.Title} className="w-full h-64 object-cover" />
+            <div
+              key={movie.imdbID}
+              className="bg-white shadow-lg rounded-md overflow-hidden"
+            >
+              <img
+                onClick={() => openDetailsModal(movie)}
+                src={movie.Poster}
+                alt={movie.Title}
+                className="w-full h-64 object-cover"
+              />
               <div className="p-4 relative">
                 <h3 className="text-base font-semibold">{movie.Title}</h3>
                 <p className="text-gray-500">{movie.Year}</p>
-                <button onClick={() => openModal(movie)} className="absolute top-0 right-4">
-                  <BsFillBookmarkPlusFill className='text-red-700 scale-[200%]' />
+                <button
+                  onClick={() => openModal(movie)}
+                  className="absolute top-0 right-4"
+                >
+                  <BsFillBookmarkPlusFill className="text-red-700 scale-[200%]" />
                 </button>
               </div>
             </div>
@@ -188,7 +256,15 @@ const MovieList = () => {
                         </option>
                       ))}
                     </select>
-                    <p className="text-gray-500 text-sm">Or <span className="text-blue-600 cursor-pointer" onClick={() => setCreatingNewList(true)}>create a new watchlist</span></p>
+                    <p className="text-gray-500 text-sm">
+                      Or{" "}
+                      <span
+                        className="text-blue-600 cursor-pointer"
+                        onClick={() => setCreatingNewList(true)}
+                      >
+                        create a new watchlist
+                      </span>
+                    </p>
                   </>
                 ) : (
                   <>
@@ -206,7 +282,15 @@ const MovieList = () => {
                       onChange={(e) => setNewListDescription(e.target.value)}
                       className="w-full p-2 border rounded mb-4"
                     />
-                    <p className="text-gray-500 text-sm">Want to choose from existing lists? <span className="text-blue-600 cursor-pointer" onClick={() => setCreatingNewList(false)}>Select from existing</span></p>
+                    <p className="text-gray-500 text-sm">
+                      Want to choose from existing lists?{" "}
+                      <span
+                        className="text-blue-600 cursor-pointer"
+                        onClick={() => setCreatingNewList(false)}
+                      >
+                        Select from existing
+                      </span>
+                    </p>
                   </>
                 )}
               </>
@@ -217,14 +301,15 @@ const MovieList = () => {
                   className="flex items-center border gap-2 px-4 py-2 bg-black text-white rounded-md hover:bg-white hover:text-black hover:border-black"
                   onClick={handleAddToList}
                 >
-                  <IoBookmarksOutline className='scale-[100%]' /><span className='text-sm'>Save</span>
+                  <IoBookmarksOutline className="scale-[100%]" />
+                  <span className="text-sm">Save</span>
                 </button>
                 <button
                   type="button"
                   className="px-4 py-2 absolute top-5 right-2 rounded"
                   onClick={closeModal}
                 >
-                  <IoCloseOutline className='scale-[120%]' />
+                  <IoCloseOutline className="scale-[120%]" />
                 </button>
               </div>
             </form>
