@@ -212,7 +212,7 @@ const MovieList = () => {
                 onClick={() => openDetailsModal(movie)}
                 src={movie.Poster}
                 alt={movie.Title}
-                className="w-full h-64 object-cover"
+                className="w-full h-64 object-cover hover:cursor-pointer "
               />
               <div className="p-4 relative">
                 <h3 className="text-base font-semibold">{movie.Title}</h3>
