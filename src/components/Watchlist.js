@@ -37,17 +37,7 @@ const Watchlist = () => {
     fetchWatchlist();
   }, [listId]);
 
-    const fetchMovieDetails = async (imdbID) => {
-    try {
-      const response = await axios.get(
-        `http://www.omdbapi.com/?i=${imdbID}&apikey=${process.env.REACT_APP_OMDB_API_KEY}`
-      );
-      setMovieDetails(response.data);
-    } catch (error) {
-      console.error("Error fetching movie details:", error);
-      alert("Failed to load movie details.");
-    }
-  };
+   
 
   const handleSave = () => {
     const currentUserEmail = localStorage.getItem('currentUser');
