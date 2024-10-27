@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { BsFillBookmarkCheckFill } from "react-icons/bs";
 import { RiEditBoxLine } from "react-icons/ri";
+import MovieDetailsModal from "./MovieDetailsModal";
 
 const Watchlist = () => {
   const { listId } = useParams();
@@ -36,6 +37,18 @@ const Watchlist = () => {
 
     fetchWatchlist();
   }, [listId]);
+
+    const fetchMovieDetails = async (imdbID) => {
+    try {
+      const response = await axios.get(
+        `http://www.omdbapi.com/?i=${imdbID}&apikey=${process.env.REACT_APP_OMDB_API_KEY}`
+      );
+      setMovieDetails(response.data);
+    } catch (error) {
+      console.error("Error fetching movie details:", error);
+      alert("Failed to load movie details.");
+    }
+  };
 
   const handleSave = () => {
     const currentUserEmail = localStorage.getItem('currentUser');
@@ -160,7 +173,7 @@ const Watchlist = () => {
         {watchlist.movies && watchlist.movies.length > 0 ? (
           watchlist.movies.map((movie) => (
             <div key={movie?.imdbID} className="bg-white relative shadow-md rounded-lg overflow-hidden">
-              <img src={movie?.Poster} alt={movie?.Title} className="w-full h-64 object-cover" />
+              <img src={movie?.Poster} alt={movie?.Title} onClick={() => openDetailsModal(movie)} className="w-full h-64 object-cover hover:cursor-pointer" />
               <div className="p-4 relative">
                 <h3 className="text-base font-semibold">{movie?.Title}</h3>
                 <p className="text-gray-500 mb-9">{movie?.Year}</p>
