@@ -1,69 +1,45 @@
-import React, { useEffect, useState } from "react";
-import { BsFillBookmarkPlusFill } from "react-icons/bs";
-import { IoCloseOutline, IoBookmarksOutline } from "react-icons/io5";
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { BsFillBookmarkCheckFill } from "react-icons/bs";
+import { RiEditBoxLine } from "react-icons/ri";
 import axios from "axios";
 import MovieDetailsModal from "./MovieDetailsModal";
 
-const MovieList = () => {
-  const [movies, setMovies] = useState([]);
-  const [query, setQuery] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+const Watchlist = () => {
+  const { listId } = useParams();
+  const [watchlist, setWatchlist] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState("");
+  const [editedDescription, setEditedDescription] = useState("");
+  const [movieDetails, setMovieDetails] = useState(null);
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [watchlists, setWatchlists] = useState([]);
-  const [selectedList, setSelectedList] = useState("");
-  const [movieDetails, setMovieDetails] = useState(null);
-  const [creatingNewList, setCreatingNewList] = useState(false);
-  const [newListName, setNewListName] = useState("");
-  const [newListDescription, setNewListDescription] = useState("");
-  const [loadingMovies, setLoadingMovies] = useState(false);
-
-  const fetchWatchlists = () => {
-    const userEmail = localStorage.getItem("currentUser");
-    if (userEmail) {
-      const users = JSON.parse(localStorage.getItem("users")) || [];
-      const currentUser = users.find((u) => u.email === userEmail);
-      if (currentUser?.watchlist) {
-        setWatchlists(currentUser.watchlist);
-      } else {
-        setWatchlists([]);
-      }
-    }
-  };
-
   useEffect(() => {
-    fetchWatchlists();
-  }, []);
+    const fetchWatchlist = () => {
+      const currentUserEmail = localStorage.getItem('currentUser');
+      if (currentUserEmail) {
+        const users = JSON.parse(localStorage.getItem('users')) || [];
+        const currentUser = users.find(user => user.email === currentUserEmail);
+        if (currentUser) {
+          const currentWatchlist = currentUser.watchlist.find((list) => list.id === listId);
+          if (currentWatchlist) {
+            setWatchlist(currentWatchlist);
+            setEditedName(currentWatchlist.name);
+            setEditedDescription(currentWatchlist.description || "");
+          } else {
+            setError('Watchlist not found.');
+          }
+        } else {
+          setError('User not found.');
+        }
+      }
+      setLoading(false);
+    };
 
-  const searchMovies = async () => {
-    setLoadingMovies(true);
-    try {
-      const response = await axios.get(
-        `https://www.omdbapi.com/?s=${query}&apikey=${process.env.REACT_APP_OMDB_API_KEY}`
-      );
-      setMovies(response.data.Search);
-    } catch (error) {
-      console.error("Error fetching movies:", error);
-      alert("Failed to load movies.");
-    } finally {
-      setLoadingMovies(false);
-    }
-  };
-
-  const openModal = (movie) => {
-    setSelectedMovie(movie);
-    setCreatingNewList(true);
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedMovie(null);
-    setSelectedList("");
-    setCreatingNewList(false);
-    setNewListName("");
-    setNewListDescription("");
-  };
+    fetchWatchlist();
+  }, [listId]);
 
   const fetchMovieDetails = async (imdbID) => {
     try {
@@ -74,6 +50,54 @@ const MovieList = () => {
     } catch (error) {
       console.error("Error fetching movie details:", error);
       alert("Failed to load movie details.");
+    }
+  };
+
+  const handleSave = () => {
+    const currentUserEmail = localStorage.getItem('currentUser');
+    if (currentUserEmail && watchlist) {
+      const users = JSON.parse(localStorage.getItem('users')) || [];
+      const currentUserIndex = users.findIndex(user => user.email === currentUserEmail);
+      if (currentUserIndex !== -1) {
+        const updatedWatchlists = users[currentUserIndex].watchlist.map((list) =>
+          list.id === listId ? { ...list, name: editedName, description: editedDescription } : list
+        );
+
+        users[currentUserIndex].watchlist = updatedWatchlists;
+        localStorage.setItem('users', JSON.stringify(users));
+
+        setWatchlist((prevWatchlist) => ({
+          ...prevWatchlist,
+          name: editedName,
+          description: editedDescription,
+        }));
+        alert('Watchlist updated successfully!');
+        setIsEditing(false);
+      }
+    }
+  };
+
+  const removeFromWatchlist = (imdbID) => {
+    const currentUserEmail = localStorage.getItem('currentUser');
+    if (currentUserEmail && watchlist) {
+      const users = JSON.parse(localStorage.getItem('users')) || [];
+      const currentUserIndex = users.findIndex(user => user.email === currentUserEmail);
+      if (currentUserIndex !== -1) {
+        const updatedWatchlists = users[currentUserIndex].watchlist.map((list) =>
+          list.id === listId
+            ? { ...list, movies: list.movies.filter((movie) => movie?.imdbID !== imdbID) }
+            : list
+        );
+
+        users[currentUserIndex].watchlist = updatedWatchlists;
+        localStorage.setItem('users', JSON.stringify(users));
+
+        setWatchlist((prevWatchlist) => ({
+          ...prevWatchlist,
+          movies: prevWatchlist.movies.filter((movie) => movie?.imdbID !== imdbID),
+        }));
+        alert('Movie removed successfully!');
+      }
     }
   };
 
@@ -89,232 +113,101 @@ const MovieList = () => {
     setMovieDetails(null);
   };
 
-  const handleAddToList = () => {
-    const userEmail = localStorage.getItem("currentUser");
-    if (!userEmail) {
-      alert("No user logged in");
-      return;
+  const toggleWatched = (movieId, currentStatus) => {
+    const currentUserEmail = localStorage.getItem('currentUser');
+    if (currentUserEmail && watchlist) {
+      const users = JSON.parse(localStorage.getItem('users')) || [];
+      const currentUserIndex = users.findIndex(user => user.email === currentUserEmail);
+      if (currentUserIndex !== -1) {
+        const updatedWatchlists = users[currentUserIndex].watchlist.map((list) =>
+          list.id === listId
+            ? {
+                ...list,
+                movies: list.movies.map((movie) =>
+                  movie.imdbID === movieId ? { ...movie, watched: !currentStatus } : movie
+                ),
+              }
+            : list
+        );
+
+        users[currentUserIndex].watchlist = updatedWatchlists;
+        localStorage.setItem('users', JSON.stringify(users));
+
+        setWatchlist((prevWatchlist) => ({
+          ...prevWatchlist,
+          movies: prevWatchlist.movies.map((movie) =>
+            movie?.imdbID === movieId ? { ...movie, watched: !currentStatus } : movie
+          ),
+        }));
+      }
     }
-
-    let users = JSON.parse(localStorage.getItem("users")) || [];
-    let currentUserIndex = users.findIndex((u) => u.email === userEmail);
-
-    if (currentUserIndex === -1) {
-      alert("User not found.");
-      return;
-    }
-
-    if (!Array.isArray(users[currentUserIndex].watchlist)) {
-      users[currentUserIndex].watchlist = [];
-    }
-
-    if (creatingNewList) {
-      if (!newListName.trim()) {
-        alert("Please provide a name for the new watchlist.");
-        return;
-      }
-
-      // Check for duplicate watchlist name
-      const isDuplicateName = users[currentUserIndex].watchlist.some(
-        list => list.name.toLowerCase() === newListName.trim().toLowerCase()
-      );
-
-      if (isDuplicateName) {
-        alert("A watchlist with this name already exists.");
-        return;
-      }
-
-      const newWatchlist = {
-        id: Date.now().toString(),
-        name: newListName.trim(),
-        description: newListDescription.trim(),
-        movies: selectedMovie ? [selectedMovie] : []
-      };
-
-      users[currentUserIndex].watchlist.push(newWatchlist);
-      localStorage.setItem("users", JSON.stringify(users));
-      setWatchlists(users[currentUserIndex].watchlist);
-      alert("New watchlist created" + (selectedMovie ? " and movie added!" : "!"));
-
-    } else {
-      if (!selectedList) {
-        alert("Please select a watchlist or create a new one.");
-        return;
-      }
-
-      const watchlistIndex = users[currentUserIndex].watchlist.findIndex(
-        (list) => list.id === selectedList
-      );
-
-      if (watchlistIndex === -1) {
-        alert("Selected watchlist not found.");
-        return;
-      }
-
-      // Check for duplicate movie
-      const movieExists = users[currentUserIndex].watchlist[watchlistIndex].movies?.some(
-        (m) => m.imdbID === selectedMovie.imdbID
-      );
-
-      if (movieExists) {
-        alert("This movie is already in the selected watchlist!");
-        return;
-      }
-
-      if (!Array.isArray(users[currentUserIndex].watchlist[watchlistIndex].movies)) {
-        users[currentUserIndex].watchlist[watchlistIndex].movies = [];
-      }
-
-      users[currentUserIndex].watchlist[watchlistIndex].movies.push(selectedMovie);
-      localStorage.setItem("users", JSON.stringify(users));
-      setWatchlists(users[currentUserIndex].watchlist);
-      alert("Movie added to watchlist!");
-    }
-
-    closeModal();
   };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
     <div className="p-8 bg-white h-screen overflow-y-scroll">
-      <div className="border border-red-700 rounded-md m-auto w-[92.5%] p-4">
-        <h3 className="text-3xl mb-8">
-          Welcome to <span className="text-red-500">Watchlists</span>
-        </h3>
-        <p className="my-2">
-          Browse movies, add them to watchlists and share them with friends
-        </p>
+      <div className='flex items-center gap-4'>
+        {isEditing ? (
+          <div>
+            <input
+              type="text"
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              className="text-2xl font-semibold border-b-2 outline-none"
+            />
+            <button onClick={handleSave} className="ml-2 border border-black bg-black p-1 px-2 text-sm rounded-md text-white hover:bg-white hover:text-black">
+              Save
+            </button>
+            <button onClick={() => setIsEditing(false)} className="ml-2 border border-black bg-black p-1 px-2 text-sm rounded-md text-white hover:bg-white hover:text-black">
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <>
+            <h2 className="text-4xl font-semibold">{watchlist.name}</h2>
+            <RiEditBoxLine className='scale-[110%] cursor-pointer' onClick={() => setIsEditing(true)} />
+          </>
+        )}
       </div>
-      <div className="relative w-[92.5%] m-auto flex mt-8">
-        <input
-          type="text"
-          placeholder="Search Movies..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="w-[100%] border border-gray-300 p-2 rounded-md"
-        />
-        <button
-          onClick={searchMovies}
-          className="absolute right-0 border border-red-500 bg-red-500 px-4 py-2 rounded-md text-white"
-        >
-          Search
-        </button>
+      <div className='my-8'>
+        <h3 className='font-semibold my-2'>About this watchlist:</h3>
+        {isEditing ? (
+          <textarea
+            value={editedDescription}
+            onChange={(e) => setEditedDescription(e.target.value)}
+            className="w-full border-b-2 outline-none"
+            rows="3"
+          />
+        ) : (
+          <p>{watchlist.description || "No description available."}</p>
+        )}
       </div>
-
-      {loadingMovies ? (
-        <p className="text-center mt-4">Loading movies...</p>
-      ) : (
-        <div className="grid lg:grid-cols-4 md:grid-cols-2 sm:grid-cols-2 m-auto gap-4 mt-8 w-[92.5%]">
-          {movies?.map((movie) => (
-            <div
-              key={movie.imdbID}
-              className="bg-white shadow-lg rounded-md overflow-hidden"
-            >
-              <img
-                onClick={() => openDetailsModal(movie)}
-                src={movie.Poster}
-                alt={movie.Title}
-                className="w-full h-64 object-cover hover:cursor-pointer "
-              />
+      <div className="grid md:grid-cols-4 lg:grid-cols-4 sm:grid-cols-2 gap-4">
+        {watchlist.movies && watchlist.movies.length > 0 ? (
+          watchlist.movies.map((movie) => (
+            <div key={movie?.imdbID}  className="bg-white relative shadow-md rounded-lg overflow-hidden">
+              <img src={movie?.Poster} onClick={() => openDetailsModal(movie)} alt={movie?.Title} className="w-full h-64 object-cover hover:cursor-pointer" />
               <div className="p-4 relative">
-                <h3 className="text-base font-semibold">{movie.Title}</h3>
-                <p className="text-gray-500">{movie.Year}</p>
+                <h3 className="text-base font-semibold">{movie?.Title}</h3>
+                <p className="text-gray-500 mb-9">{movie?.Year}</p>
                 <button
-                  onClick={() => openModal(movie)}
-                  className="absolute top-0 right-4"
+                  onClick={() => removeFromWatchlist(movie?.imdbID)}
+                  className="absolute bottom-2 w-[85%] bg-red-500 text-white py-1 px-4 rounded"
                 >
-                  <BsFillBookmarkPlusFill className="text-red-700 scale-[200%]" />
+                  Remove 
+                </button>
+                <button onClick={() => toggleWatched(movie?.imdbID, movie?.watched)}>
+                  <BsFillBookmarkCheckFill className={`absolute top-0 right-4 scale-[200%] ${movie?.watched ? 'text-green-600' : 'text-gray-500'}`} />
                 </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Watchlist modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white relative rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-2xl font-semibold mb-4">Add to List</h2>
-            <form onSubmit={(e) => e.preventDefault()}>
-              <>
-                {watchlists.length > 0 && !creatingNewList ? (
-                  <>
-                    <select
-                      value={selectedList}
-                      onChange={(e) => setSelectedList(e.target.value)}
-                      className="w-full p-2 border rounded mb-4"
-                    >
-                      <option value="">Select Watchlist</option>
-                      {watchlists.map((list) => (
-                        <option key={list.id} value={list.id}>
-                          {list.name}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-gray-500 text-sm">
-                      Or{" "}
-                      <span
-                        className="text-blue-600 cursor-pointer"
-                        onClick={() => setCreatingNewList(false)}
-                      >
-                        create a new watchlist
-                      </span>
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <input
-                      type="text"
-                      placeholder="New List Name"
-                      value={newListName}
-                      onChange={(e) => setNewListName(e.target.value)}
-                      className="w-full p-2 border rounded mb-4"
-                    />
-                    <input
-                      type="text"
-                      placeholder="New List Description"
-                      value={newListDescription}
-                      onChange={(e) => setNewListDescription(e.target.value)}
-                      className="w-full p-2 border rounded mb-4"
-                    />
-                 
-                    <p className="text-gray-500 text-sm"
-                    onClick={() => setCreatingNewList(false)}
-                    >
-                      Want to choose from existing lists?{" "}
-                      <span
-                        className="text-blue-600 cursor-pointer"
-                         
-                      >Select from existing
-                      </span>
-                    </p>
-                 
-                  </>
-                )}
-              </>
-
-              <div  className="flex justify-end mt-6">
-                <button
-                  type="button"
-                  className="flex items-center border gap-2 px-4 py-2 bg-black text-white rounded-md hover:bg-white hover:text-black hover:border-black"
-                  onClick={handleAddToList}
-                        
-                >
-                  <IoBookmarksOutline className="scale-[100%]" />
-                  <span className="text-sm">Save</span>
-                </button>
-                <button
-                  type="button"
-                  className="px-4 py-2 absolute top-5 right-2 rounded"
-                  onClick={closeModal}
-                >
-                  <IoCloseOutline className="scale-[120%]" />
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+          ))
+        ) : (
+          <p>No movies found in this watchlist.</p>
+        )}
+      </div>
 
       {/* Movie details modal */}
       {detailsModalOpen && movieDetails && (
@@ -324,4 +217,4 @@ const MovieList = () => {
   );
 };
 
-export default MovieList;
+export default Watchlist;
