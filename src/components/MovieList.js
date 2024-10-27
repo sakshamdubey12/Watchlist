@@ -39,7 +39,7 @@ const MovieList = () => {
     setLoadingMovies(true);
     try {
       const response = await axios.get(
-        `http://www.omdbapi.com/?s=${query}&apikey=${process.env.REACT_APP_OMDB_API_KEY}`
+        `https://www.omdbapi.com/?s=${query}&apikey=${process.env.REACT_APP_OMDB_API_KEY}`
       );
       setMovies(response.data.Search);
     } catch (error) {
@@ -67,7 +67,7 @@ const MovieList = () => {
   const fetchMovieDetails = async (imdbID) => {
     try {
       const response = await axios.get(
-        `http://www.omdbapi.com/?i=${imdbID}&apikey=${process.env.REACT_APP_OMDB_API_KEY}`
+        `https://www.omdbapi.com/?i=${imdbID}&apikey=${process.env.REACT_APP_OMDB_API_KEY}`
       );
       setMovieDetails(response.data);
     } catch (error) {
