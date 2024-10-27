@@ -7,7 +7,8 @@ import { useNavigate } from "react-router-dom";
 import { MdOutlineBookmarkAdd } from "react-icons/md";
 import Modal from "./Modal";
 import { RiMovieLine } from "react-icons/ri";
-import { useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
+import { logout } from '../redux/userSlice';
 
 const Sidebar = () => {
   const [watchlists, setWatchlists] = useState([]);
@@ -15,85 +16,92 @@ const Sidebar = () => {
   const [newListDescription, setNewListDescription] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  // Function to fetch watchlists from localStorage (from users array)
   const fetchWatchlists = () => {
-    const user = localStorage.getItem('currentUser');
-    if (user) {
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser) {
       const users = JSON.parse(localStorage.getItem('users')) || [];
-      const currentUser = users.find(u => u.email === user);
-
-      if (currentUser) {
-        setWatchlists(currentUser.watchlist || []);
+      const user = users.find(u => u.email === currentUser);
+      if (user && user.watchlist) {
+        if (JSON.stringify(user.watchlist) !== JSON.stringify(watchlists)) {
+          setWatchlists(user.watchlist);
+        }
       }
     }
   };
 
   useEffect(() => {
     fetchWatchlists();
-  }, []); // Only fetch watchlists once on mount
 
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    navigate("/");
-  };
+
+    const interval = setInterval(() => {
+      fetchWatchlists();
+    }, 2000); 
+    return () => clearInterval(interval);
+  }, []);
 
   const handleAddWatchlist = () => {
-    const user = localStorage.getItem('currentUser');
-    if (!user) {
+    const currentUser = localStorage.getItem('currentUser');
+    if (!currentUser) {
       alert("No user is logged in.");
       return;
     }
-
-    const newWatchlist = {
-      id: Date.now().toString(), // Unique ID for the watchlist
-      name: newListName,
-      description: newListDescription,
-    };
-
-    // Fetch all users from localStorage
+  
+    if (!newListName.trim()) {
+      alert("Please provide a name for the watchlist.");
+      return;
+    }
+  
     let users = JSON.parse(localStorage.getItem('users')) || [];
-    let currentUser = users.find(u => u.email === user);
-
-    // If currentUser is found, add the new watchlist to their watchlist array
-    if (currentUser) {
-      currentUser.watchlist = currentUser.watchlist || []; // Initialize watchlist if it doesn't exist
-      currentUser.watchlist.push(newWatchlist);
-
-      // Update the users array with the modified currentUser
-      const updatedUsers = users.map(u => u.email === user ? currentUser : u);
-      localStorage.setItem('users', JSON.stringify(updatedUsers)); // Save updated users array back to localStorage
-
-      // Update component state
-      setWatchlists(currentUser.watchlist);
+    let currentUserIndex = users.findIndex(u => u.email === currentUser);
+  
+    if (currentUserIndex !== -1) {
+      if (!Array.isArray(users[currentUserIndex].watchlist)) {
+        users[currentUserIndex].watchlist = [];
+      }
+        
+      const newWatchlist = {
+        id: Date.now().toString(),
+        name: newListName.trim(),
+        description: newListDescription.trim(),
+        movies: []
+      };
+      
+      users[currentUserIndex].watchlist.push(newWatchlist);
+      localStorage.setItem('users', JSON.stringify(users));
+      setWatchlists(users[currentUserIndex].watchlist);
+      
       setNewListName("");
       setNewListDescription("");
       setIsModalOpen(false);
-      alert("Watchlist created successfully!");
     } else {
       alert("User not found.");
     }
   };
 
   const handleDelete = (listId) => {
-    const user = localStorage.getItem('currentUser');
-    if (user) {
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser) {
       let users = JSON.parse(localStorage.getItem('users')) || [];
-      let currentUser = users.find(u => u.email === user);
+      let currentUserIndex = users.findIndex(u => u.email === currentUser);
 
-      if (currentUser) {
-        const updatedWatchlists = currentUser.watchlist.filter(list => list.id !== listId);
-
-        currentUser.watchlist = updatedWatchlists; // Update user's watchlist
-
-        // Save updated users array back to localStorage
-        const updatedUsers = users.map(u => u.email === user ? currentUser : u);
-        localStorage.setItem('users', JSON.stringify(updatedUsers));
-
-        setWatchlists(updatedWatchlists); // Update component state
+      if (currentUserIndex !== -1) {
+        users[currentUserIndex].watchlist = users[currentUserIndex].watchlist.filter(
+          list => list.id !== listId
+        );
+        
+        localStorage.setItem('users', JSON.stringify(users));
+        setWatchlists(prevWatchlists => prevWatchlists.filter(list => list.id !== listId));
         navigate("/dashboard");
       }
     }
+  };
+
+  const handleLogout = () => {
+    dispatch(logout());
+    localStorage.removeItem("currentUser");
+    navigate("/");
   };
 
   return (
@@ -123,7 +131,7 @@ const Sidebar = () => {
           <div className="flex justify-between items-center mr-2">
             <h2 className="font-semibold text-xl">My Lists</h2>
             <button onClick={() => setIsModalOpen(true)}>
-              <MdOutlineBookmarkAdd className="scale-150 text-red-500 " />
+              <MdOutlineBookmarkAdd className="scale-150 text-red-500" />
             </button>
           </div>
           {watchlists.map((list) => (
@@ -157,7 +165,6 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* Modal for adding watchlist */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
