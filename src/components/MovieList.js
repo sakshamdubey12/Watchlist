@@ -51,7 +51,9 @@ const MovieList = () => {
   };
 
   const openModal = (movie) => {
+    
     setSelectedMovie(movie);
+    setCreatingNewList(true);
     setIsModalOpen(true);
   };
 
@@ -254,7 +256,7 @@ const MovieList = () => {
                       Or{" "}
                       <span
                         className="text-blue-600 cursor-pointer"
-                        onClick={() => setCreatingNewList(true)}
+                        onClick={() => setCreatingNewList(false)}
                       >
                         create a new watchlist
                       </span>
@@ -276,24 +278,28 @@ const MovieList = () => {
                       onChange={(e) => setNewListDescription(e.target.value)}
                       className="w-full p-2 border rounded mb-4"
                     />
-                    <p className="text-gray-500 text-sm">
+                 
+                    <p className="text-gray-500 text-sm"
+                    onClick={() => setCreatingNewList(false)}
+                    >
                       Want to choose from existing lists?{" "}
                       <span
                         className="text-blue-600 cursor-pointer"
-                        onClick={() => setCreatingNewList(false)}
-                      >
-                        Select from existing
+                         
+                      >Select from existing
                       </span>
                     </p>
+                 
                   </>
                 )}
               </>
 
-              <div className="flex justify-end mt-6">
+              <div  className="flex justify-end mt-6">
                 <button
                   type="button"
                   className="flex items-center border gap-2 px-4 py-2 bg-black text-white rounded-md hover:bg-white hover:text-black hover:border-black"
                   onClick={handleAddToList}
+                        
                 >
                   <IoBookmarksOutline className="scale-[100%]" />
                   <span className="text-sm">Save</span>
