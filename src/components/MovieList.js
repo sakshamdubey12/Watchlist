@@ -1,17 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
-import { addToWatchlist } from "../redux/userSlice";
 import { BsFillBookmarkPlusFill } from "react-icons/bs";
 import { IoCloseOutline, IoBookmarksOutline } from "react-icons/io5";
 import axios from "axios";
-import MovieDetailsModal from "./MovieDetailsModal"; // Import the new modal
+import MovieDetailsModal from "./MovieDetailsModal";
 
 const MovieList = () => {
   const [movies, setMovies] = useState([]);
   const [query, setQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState(null);
-  const [detailsModalOpen, setDetailsModalOpen] = useState(false); // New state for details modal
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [watchlists, setWatchlists] = useState([]);
   const [selectedList, setSelectedList] = useState("");
   const [movieDetails, setMovieDetails] = useState(null);
@@ -19,22 +17,16 @@ const MovieList = () => {
   const [newListName, setNewListName] = useState("");
   const [newListDescription, setNewListDescription] = useState("");
   const [loadingMovies, setLoadingMovies] = useState(false);
-  const dispatch = useDispatch();
 
   const fetchWatchlists = () => {
-    const userEmail = localStorage.getItem("currentUser"); // Assume this stores the user's email as the key for currentUser
+    const userEmail = localStorage.getItem("currentUser");
     if (userEmail) {
-      // Fetch all users from localStorage
-      let users = JSON.parse(localStorage.getItem("users")) || [];
-
-      // Find the current user
-      let currentUser = users.find((u) => u.email === userEmail);
-
-      // If currentUser is found, fetch their watchlists from their specific key
-      if (currentUser && currentUser.watchlist) {
-        setWatchlists(currentUser.watchlist); // Set the current user's watchlists in state
+      const users = JSON.parse(localStorage.getItem("users")) || [];
+      const currentUser = users.find((u) => u.email === userEmail);
+      if (currentUser?.watchlist) {
+        setWatchlists(currentUser.watchlist);
       } else {
-        setWatchlists([]); // If no watchlists found, set an empty array
+        setWatchlists([]);
       }
     }
   };
@@ -73,17 +65,14 @@ const MovieList = () => {
   };
 
   const fetchMovieDetails = async (imdbID) => {
-    // setLoadingDetails(true);
     try {
       const response = await axios.get(
         `http://www.omdbapi.com/?i=${imdbID}&apikey=${process.env.REACT_APP_OMDB_API_KEY}`
       );
-      setMovieDetails(response.data); // Set detailed info into state
+      setMovieDetails(response.data);
     } catch (error) {
       console.error("Error fetching movie details:", error);
       alert("Failed to load movie details.");
-    } finally {
-      // setLoadingDetails(false);
     }
   };
 
@@ -100,80 +89,85 @@ const MovieList = () => {
   };
 
   const handleAddToList = () => {
-    const userEmail = localStorage.getItem("currentUser"); // Assume this stores the user's email as the key for currentUser
+    const userEmail = localStorage.getItem("currentUser");
     if (!userEmail) {
       alert("No user logged in");
       return;
     }
 
-    // Fetch all users from localStorage
     let users = JSON.parse(localStorage.getItem("users")) || [];
-
-    // Find the current user by email
     let currentUserIndex = users.findIndex((u) => u.email === userEmail);
-    let currentUser = users[currentUserIndex];
 
-    if (!currentUser) {
+    if (currentUserIndex === -1) {
       alert("User not found.");
       return;
     }
 
-    // Ensure that the watchlist array exists
-    if (!Array.isArray(currentUser.watchlist)) {
-      currentUser.watchlist = [];
+    if (!Array.isArray(users[currentUserIndex].watchlist)) {
+      users[currentUserIndex].watchlist = [];
     }
 
-    // If creating a new list
     if (creatingNewList) {
-      if (newListName) {
-        const newWatchlist = {
-          id: Date.now().toString(),
-          name: newListName,
-          description: newListDescription,
-          movies: [selectedMovie], // Add the selected movie to the new watchlist
-        };
-
-        currentUser.watchlist.push(newWatchlist); // Add new watchlist to the user's watchlist array
-        users[currentUserIndex] = currentUser; // Update the user in the users array
-        localStorage.setItem("users", JSON.stringify(users)); // Save updated users array
-
-        setWatchlists(currentUser.watchlist); // Update state with the new watchlist
-        dispatch(
-          addToWatchlist({ list: newWatchlist.id, movie: selectedMovie })
-        );
-        alert("Watchlist created and movie added!");
-      } else {
+      if (!newListName.trim()) {
         alert("Please provide a name for the new watchlist.");
+        return;
       }
+
+      // Check for duplicate watchlist name
+      const isDuplicateName = users[currentUserIndex].watchlist.some(
+        list => list.name.toLowerCase() === newListName.trim().toLowerCase()
+      );
+
+      if (isDuplicateName) {
+        alert("A watchlist with this name already exists.");
+        return;
+      }
+
+      const newWatchlist = {
+        id: Date.now().toString(),
+        name: newListName.trim(),
+        description: newListDescription.trim(),
+        movies: selectedMovie ? [selectedMovie] : []
+      };
+
+      users[currentUserIndex].watchlist.push(newWatchlist);
+      localStorage.setItem("users", JSON.stringify(users));
+      setWatchlists(users[currentUserIndex].watchlist);
+      alert("New watchlist created" + (selectedMovie ? " and movie added!" : "!"));
+
     } else {
-      if (selectedList) {
-        // Find the watchlist by ID
-        const watchlistIndex = currentUser.watchlist.findIndex(
-          (list) => list.id === selectedList
-        );
-        if (watchlistIndex !== -1) {
-          // Ensure that the movies array exists in the watchlist
-          if (!Array.isArray(currentUser.watchlist[watchlistIndex].movies)) {
-            currentUser.watchlist[watchlistIndex].movies = [];
-          }
-
-          // Add the selected movie to the existing watchlist
-          currentUser.watchlist[watchlistIndex].movies.push(selectedMovie);
-
-          users[currentUserIndex] = currentUser; // Update the user in the users array
-          localStorage.setItem("users", JSON.stringify(users)); // Save updated users array
-
-          setWatchlists(currentUser.watchlist); // Update state with new watchlist data
-          dispatch(
-            addToWatchlist({ list: selectedList, movie: selectedMovie })
-          );
-          alert("Movie added to watchlist!");
-        } else {
-          alert("Watchlist not found.");
-        }
-      } else {
+      if (!selectedList) {
         alert("Please select a watchlist or create a new one.");
+        return;
       }
+
+      const watchlistIndex = users[currentUserIndex].watchlist.findIndex(
+        (list) => list.id === selectedList
+      );
+
+      if (watchlistIndex === -1) {
+        alert("Selected watchlist not found.");
+        return;
+      }
+
+      // Check for duplicate movie
+      const movieExists = users[currentUserIndex].watchlist[watchlistIndex].movies?.some(
+        (m) => m.imdbID === selectedMovie.imdbID
+      );
+
+      if (movieExists) {
+        alert("This movie is already in the selected watchlist!");
+        return;
+      }
+
+      if (!Array.isArray(users[currentUserIndex].watchlist[watchlistIndex].movies)) {
+        users[currentUserIndex].watchlist[watchlistIndex].movies = [];
+      }
+
+      users[currentUserIndex].watchlist[watchlistIndex].movies.push(selectedMovie);
+      localStorage.setItem("users", JSON.stringify(users));
+      setWatchlists(users[currentUserIndex].watchlist);
+      alert("Movie added to watchlist!");
     }
 
     closeModal();
